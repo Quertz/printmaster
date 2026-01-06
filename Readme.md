@@ -17,4 +17,4 @@ Automatický tisk denního přehledu na termotiskárnu s počasím, kalendářem
 - 🔄 **Automatické aktualizace** - Kontrola a instalace nových verzí z GitHubu
 
 ## 🚀 Rychlá instalace na Raspberry Pi
-```bash
+curl -sSL https://raw.githubusercontent.com/Quertz/printmaster/main/install.sh | bash
