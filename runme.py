@@ -39,10 +39,14 @@ def create_initial_config():
     print("Zaregistrujte se na https://openweathermap.org/api (zdarma)")
     api_key = input("OpenWeatherMap API klíč: ").strip()
     config['Weather']['api_key'] = api_key
-    
-    city = input("Město [Prague]: ").strip() or "Prague"
+
+    print("\nZadejte lokaci jedním z následujících způsobů:")
+    print("  1. Název města: Prague")
+    print("  2. PSČ: 11000")
+    print("  3. Souřadnice: 50.0755,14.4378")
+    city = input("Lokace [Prague]: ").strip() or "Prague"
     config['Weather']['city'] = city
-    
+
     country = input("Kód země [CZ]: ").strip() or "CZ"
     config['Weather']['country_code'] = country
     
@@ -61,6 +65,8 @@ def create_initial_config():
     print("\n--- KALENDÁŘE ---")
     print("Můžete přidat více kalendářů (iCal URL)")
     print("Pro Google Calendar: Nastavení → Integrovat → Tajná adresa ve formátu iCal")
+    print("Pro iCloud: Kalendář → Sdílet → Veřejný kalendář (podporuje webcal://)")
+    print("Podporované protokoly: https://, http://, webcal://")
     
     cal_count = 1
     while True:

@@ -303,16 +303,50 @@ class DryRunPrinter:
 # ====== FUNKCE ======
 
 def get_weather():
-    """Získá aktuální počasí"""
+    """Získá aktuální počasí - podporuje města, PSČ i souřadnice"""
     if not OPENWEATHER_API_KEY:
         print("Varování: OpenWeatherMap API klíč není nastaven")
         return None
-    
+
     try:
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={CITY},{COUNTRY_CODE}&appid={OPENWEATHER_API_KEY}&units=metric&lang=cz"
+        # Detekce typu lokace a sestavení URL
+        base_url = "http://api.openweathermap.org/data/2.5/weather"
+
+        # Zkusíme detekovat typ lokace
+        city_value = CITY.strip()
+
+        # Pokud obsahuje čárku, může to být souřadnice (lat,lon)
+        if ',' in city_value:
+            parts = city_value.split(',')
+            # Pokud jsou obě části čísla, je to lat,lon
+            try:
+                lat = float(parts[0].strip())
+                lon = float(parts[1].strip())
+                url = f"{base_url}?lat={lat}&lon={lon}&appid={OPENWEATHER_API_KEY}&units=metric&lang=cz"
+                print(f"Použitá lokace: Souřadnice {lat},{lon}")
+            except ValueError:
+                # Není to číslo, takže je to město s kódem země
+                url = f"{base_url}?q={CITY},{COUNTRY_CODE}&appid={OPENWEATHER_API_KEY}&units=metric&lang=cz"
+                print(f"Použitá lokace: Město {CITY}")
+        # Pokud je to jen číslo (případně s písmenem), může to být PSČ
+        elif city_value.replace(' ', '').isdigit() or (len(city_value) <= 10 and any(c.isdigit() for c in city_value)):
+            # PSČ formát
+            url = f"{base_url}?zip={city_value},{COUNTRY_CODE}&appid={OPENWEATHER_API_KEY}&units=metric&lang=cz"
+            print(f"Použitá lokace: PSČ {city_value}")
+        else:
+            # Standardní název města
+            url = f"{base_url}?q={CITY},{COUNTRY_CODE}&appid={OPENWEATHER_API_KEY}&units=metric&lang=cz"
+            print(f"Použitá lokace: Město {CITY}")
+
         response = requests.get(url, timeout=10)
+        response.raise_for_status()  # Vyvolá výjimku při chybě HTTP
         data = response.json()
-        
+
+        # Kontrola, zda API vrátilo chybu
+        if 'cod' in data and data['cod'] != 200:
+            print(f"OpenWeather API chyba: {data.get('message', 'Neznámá chyba')}")
+            return None
+
         return {
             "teplota": round(data["main"]["temp"]),
             "pocit": round(data["main"]["feels_like"]),
@@ -323,8 +357,14 @@ def get_weather():
             "snih": "snow" in data["weather"][0]["main"].lower(),
             "oblacnost": data["clouds"]["all"]
         }
+    except requests.exceptions.RequestException as e:
+        print(f"Chyba při komunikaci s OpenWeather API: {e}")
+        return None
+    except KeyError as e:
+        print(f"Chyba při zpracování dat z API: {e}")
+        return None
     except Exception as e:
-        print(f"Chyba při získávání počasí: {e}")
+        print(f"Neočekávaná chyba při získávání počasí: {e}")
         return None
 
 def get_horoskop():
@@ -357,15 +397,25 @@ def get_horoskop():
         }
 
 def get_ical_events():
-    """Získá události ze všech iCal kalendářů"""
+    """Získá události ze všech iCal kalendářů - podporuje webcal:// protokol"""
     vsechny_udalosti = []
-    
+
     for kalendar in KALENDARE:
         if not kalendar["url"] or kalendar["url"].startswith("https://calendar.google.com/calendar/ical/xxxxx"):
             continue
-        
+
         try:
-            response = requests.get(kalendar["url"], timeout=10)
+            # Převod webcal:// na https:// (webcal je jen alias pro http/https)
+            url = kalendar["url"]
+            if url.startswith("webcal://"):
+                url = url.replace("webcal://", "https://", 1)
+                print(f"Převod webcal:// na https:// pro {kalendar['nazev']}")
+            elif url.startswith("webcals://"):
+                url = url.replace("webcals://", "https://", 1)
+                print(f"Převod webcals:// na https:// pro {kalendar['nazev']}")
+
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()  # Vyvolá výjimku při chybě HTTP
             cal = Calendar.from_ical(response.content)
             
             dnes = datetime.datetime.now(tz.tzlocal()).date()
