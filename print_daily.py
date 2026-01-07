@@ -402,28 +402,51 @@ def get_ical_events():
 def get_rss_news(max_zprav=5):
     """Získá nejnovější zprávy z RSS"""
     zpravy = []
-    
+
+    # Hlavičky pro přístup k RSS feedům (některé weby blokují přístup bez user-agent)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
     for zdroj in RSS_ZDROJE:
         try:
-            feed = feedparser.parse(zdroj["url"])
-            
+            # Použití requestů s hlavičkami pro získání RSS feede
+            response = requests.get(zdroj["url"], headers=headers, timeout=10, allow_redirects=True)
+
+            # Kontrola HTTP statusu
+            if response.status_code != 200:
+                print(f"Varování: {zdroj['nazev']} vrátil status {response.status_code}")
+                continue
+
+            # Parse feedu z obsahu
+            feed = feedparser.parse(response.content)
+
+            # Kontrola, zda feed obsahuje záznamy
+            if not hasattr(feed, 'entries') or len(feed.entries) == 0:
+                print(f"Varování: {zdroj['nazev']} nemá žádné zprávy")
+                continue
+
+            # Zpracování prvních 2 zpráv z každého zdroje
             for entry in feed.entries[:2]:
+                if not hasattr(entry, 'title'):
+                    continue
+
                 titulek = entry.title
                 if len(titulek) > 60:
                     titulek = titulek[:57] + "..."
-                
+
                 zpravy.append({
                     "titulek": titulek,
                     "zdroj": zdroj["nazev"]
                 })
-                
+
                 if len(zpravy) >= max_zprav:
                     return zpravy
-                    
+
         except Exception as e:
             print(f"Chyba při načítání RSS z {zdroj['nazev']}: {e}")
             continue
-    
+
     return zpravy
 
 def get_svatek_a_jmeniny():

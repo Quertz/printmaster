@@ -90,10 +90,10 @@ def create_initial_config():
     use_default = input("Použít výchozí české zdroje zpráv? (ano/ne) [ano]: ").strip().lower()
     
     if use_default in ['', 'ano', 'a', 'yes', 'y']:
-        config['RSS']['rss_1'] = 'iDNES.cz|https://servis.idnes.cz/rss.aspx?c=zpravodaj'
-        config['RSS']['rss_2'] = 'Novinky.cz|https://www.novinky.cz/rss'
-        config['RSS']['rss_3'] = 'iRozhlas|https://www.irozhlas.cz/rss/irozhlas/section/zpravy-domov'
-        config['RSS']['rss_4'] = 'ČT24|https://ct24.ceskatelevize.cz/rss/hlavni-zpravy'
+        config['RSS']['rss_1'] = 'Novinky.cz|https://www.novinky.cz/rss'
+        config['RSS']['rss_2'] = 'ČT24|https://ct24.ceskatelevize.cz/rss/hlavni-zpravy'
+        config['RSS']['rss_3'] = 'Hospodářské noviny|https://ihned.cz/?p=000000_rss'
+        config['RSS']['rss_4'] = 'Seznam Zprávy|https://www.seznamzpravy.cz/rss'
     
     max_news = input("Maximální počet zpráv [5]: ").strip() or "5"
     config['RSS']['max_news'] = max_news
